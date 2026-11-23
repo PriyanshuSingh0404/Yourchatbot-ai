@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NovaChat — Ask Anything AI Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
+            display: ['Fraunces', 'Georgia', 'serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; overflow: hidden; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.35); border-radius: 9999px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: rgba(148, 163, 184, 0.55); }
+
+    @keyframes pulseDot {
+      0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+    .typing-dot { animation: pulseDot 1.3s infinite ease-in-out both; }
+    .typing-dot:nth-child(2) { animation-delay: 0.16s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.32s; }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .msg-enter { animation: fadeSlideUp 0.22s ease-out; }
+
+    .prose-chat p { margin: 0 0 0.7rem 0; line-height: 1.7; letter-spacing: -0.005em; }
+    .prose-chat p:last-child { margin-bottom: 0; }
+    .prose-chat h3 { font-family: 'Fraunces', Georgia, serif; font-size: 1.12rem; font-weight: 600; letter-spacing: -0.015em; margin: 0.95rem 0 0.45rem 0; }
+    .prose-chat h3:first-child { margin-top: 0; }
+    .prose-chat ul, .prose-chat ol { margin: 0.45rem 0 0.7rem 1.25rem; padding: 0; }
+    .prose-chat ul { list-style-type: disc; }
+    .prose-chat ol { list-style-type: decimal; }
+    .prose-chat li { margin-bottom: 0.3rem; line-height: 1.6; }
+    .prose-chat blockquote {
+      border-left: 3px solid #6366f1;
+      padding: 0.35rem 0.85rem;
+      margin: 0.6rem 0;
+      border-radius: 0 0.5rem 0.5rem 0;
+      background: rgba(99, 102, 241, 0.08);
+    }
+    .prose-chat code.inline-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.84em;
+      padding: 0.12rem 0.38rem;
+      border-radius: 0.35rem;
+      background: rgba(99, 102, 241, 0.12);
+      color: #4f46e5;
+    }
+    .dark .prose-chat blockquote {
+      border-left-color: #737373;
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .dark .prose-chat code.inline-code {
+      background: rgba(255, 255, 255, 0.1);
+      color: #f5f5f5;
+    }
+    .prose-chat pre {
+      margin: 0.75rem 0;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      background: #0f172a;
+      color: #e2e8f0;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    .dark .prose-chat pre {
+      background: #0a0a0a;
+      color: #e5e5e5;
+      border-color: #262626;
+    }
+    .prose-chat pre code {
+      display: block;
+      padding: 0.9rem 1rem;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.55;
+    }
+    .prose-chat a {
+      color: #4f46e5;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .dark .prose-chat a { color: #e5e5e5; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-black dark:text-neutral-100 font-sans antialiased selection:bg-brand-500/20 dark:selection:bg-white/20">
+
+  <div id="app" class="flex h-full w-full overflow-hidden relative">
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="sidebarBackdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-30 hidden lg:hidden transition-opacity"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-72 max-w-[85vw] bg-white dark:bg-neutral-950 border-r border-slate-200 dark:border-neutral-800 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out shrink-0">
+      <!-- Brand Header -->
+      <div class="p-4 flex items-center justify-between border-b border-slate-100 dark:border-neutral-800">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 via-indigo-500 to-violet-600 dark:from-neutral-800 dark:via-neutral-900 dark:to-black dark:border dark:border-neutral-700 flex items-center justify-center shadow-sm shadow-brand-500/25 dark:shadow-none shrink-0">
+            <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/>
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <h1 class="font-display text-base font-semibold tracking-tight truncate">NovaChat</h1>
+            <p class="text-[11px] text-slate-500 dark:text-neutral-400 truncate">Ask anything, anytime</p>
+          </div>
+        </div>
+        <button id="closeSidebarBtn" class="lg:hidden p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-neutral-900" aria-label="Close sidebar">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- New Chat & Search -->
+      <div class="p-3 space-y-2.5">
+        <button id="newChatBtn" class="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 dark:bg-white dark:hover:bg-neutral-200 dark:text-black active:scale-[0.99] text-white text-sm font-medium shadow-sm shadow-brand-600/20 dark:shadow-none transition">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+          <span>New Chat</span>
+        </button>
+
+        <div class="relative">
+          <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          <input id="searchChatsInput" type="text" placeholder="Search conversations..." class="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-slate-100 dark:bg-neutral-900 border border-transparent focus:border-brand-400 focus:bg-white dark:focus:bg-neutral-900 outline-none transition placeholder:text-slate-400" />
+        </div>
+
+        <!-- Sidebar Tabs: Chats / Saved -->
+        <div class="grid grid-cols-2 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-neutral-900 text-xs font-medium">
+          <button id="tabChatsBtn" class="py-1.5 rounded-lg bg-white dark:bg-neutral-800 text-slate-900 dark:text-white shadow-xs transition flex items-center justify-center gap-1.5">
+            <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+            <span>Chats</span>
+          </button>
+          <button id="tabSavedBtn" class="py-1.5 rounded-lg text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-neutral-200 transition flex items-center justify-center gap-1.5">
+            <i data-lucide="bookmark" class="w-3.5 h-3.5"></i>
+            <span>Saved</span>
+            <span id="savedCountBadge" class="hidden px-1.5 py-0.2 text-[10px] rounded-full bg-brand-100 dark:bg-neutral-800 text-brand-700 dark:text-neutral-200">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Conversation List / Saved List -->
+      <div id="sidebarList" class="flex-1 overflow-y-auto custom-scroll px-2.5 pb-3 space-y-1"></div>
+
+      <!-- Sidebar Footer -->
+      <div class="p-3 border-t border-slate-100 dark:border-neutral-800 space-y-1.5">
+        <button id="openSettingsBtn" class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-900 transition">
+          <span class="flex items-center gap-2">
+            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-slate-400"></i>
+            <span>Assistant Settings</span>
+          </span>
+          <span id="engineStatusDot" class="w-2 h-2 rounded-full bg-emerald-500" title="Live Knowledge Ready"></span>
+        </button>
+        <div class="flex items-center justify-between px-3 py-1 text-[11px] text-slate-400 dark:text-neutral-500">
+          <span id="liveModeLabel">Hybrid Live Knowledge</span>
+          <button id="themeToggleSidebar" class="hover:text-slate-700 dark:hover:text-neutral-200 transition flex items-center gap-1" aria-label="Toggle theme">
+            <i data-lucide="moon" class="w-3.5 h-3.5 dark:hidden"></i>
+            <i data-lucide="sun" class="w-3.5 h-3.5 hidden dark:inline"></i>
+            <span class="dark:hidden">Dark</span>
+            <span class="hidden dark:inline">Light</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Chat Area -->
+    <main class="flex-1 flex flex-col min-w-0 h-full bg-slate-50 dark:bg-black relative">
+
+      <!-- Top Bar -->
+      <header class="h-14 px-3 sm:px-5 border-b border-slate-200/80 dark:border-neutral-800 bg-white/85 dark:bg-black/90 backdrop-blur-md flex items-center justify-between gap-2 shrink-0 z-20">
+        <div class="flex items-center gap-2 min-w-0">
+          <button id="openSidebarBtn" class="lg:hidden p-2 rounded-xl text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-900 transition" aria-label="Open menu">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div class="min-w-0">
+            <h2 id="activeChatTitle" class="font-display text-base font-semibold tracking-tight truncate">New Conversation</h2>
+            <div class="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-neutral-400">
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span id="headerStatusText" class="truncate">Ready • Live Web Knowledge + Math & Code</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 shrink-0">
+          <!-- Response Mode Dropdown -->
+          <div class="relative">
+            <label for="modeSelect" class="sr-only">Response Mode</label>
+            <select id="modeSelect" class="text-xs font-medium pl-2.5 pr-7 py-1.5 rounded-xl bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-neutral-200 border border-slate-200/70 dark:border-neutral-800 outline-none focus:border-brand-500 cursor-pointer appearance-none">
+              <option value="balanced">✨ Balanced</option>
+              <option value="concise">⚡ Concise</option>
+              <option value="detailed">📚 Detailed</option>
+              <option value="eli5">🌱 Simple (ELI5)</option>
+              <option value="code">💻 Code Expert</option>
+            </select>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none"></i>
+          </div>
+
+          <button id="exportChatBtn" class="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-900 transition" title="Export chat as Markdown" aria-label="Export chat">
+            <i data-lucide="download" class="w-4 h-4"></i>
+          </button>
+
+          <button id="themeToggleBtn" class="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:text-neutral-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-900 transition" title="Toggle light/dark mode" aria-label="Toggle theme">
+            <i data-lucide="moon" class="w-4 h-4 dark:hidden"></i>
+            <i data-lucide="sun" class="w-4 h-4 hidden dark:inline"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Messages Viewport -->
+      <div id="messagesContainer" class="flex-1 overflow-y-auto custom-scroll px-3 sm:px-6 py-5">
+        <div id="messagesInner" class="max-w-3xl mx-auto w-full space-y-5"></div>
+      </div>
+
+      <!-- Scroll to Bottom Button -->
+      <button id="scrollToBottomBtn" class="hidden absolute bottom-28 right-5 z-20 p-2.5 rounded-full bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-md text-slate-600 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800 transition" aria-label="Scroll to bottom">
+        <i data-lucide="arrow-down" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Composer Bar -->
+      <div class="px-3 sm:px-6 pb-3 sm:pb-4 pt-2 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent dark:from-black dark:via-black shrink-0">
+        <div class="max-w-3xl mx-auto w-full">
+          <!-- Stop Generating Pill -->
+          <div id="stopGeneratingWrap" class="hidden flex justify-center mb-2">
+            <button id="stopGeneratingBtn" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-sm text-xs font-medium text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800 transition">
+              <span class="w-2 h-2 rounded-xs bg-rose-500"></span>
+              <span>Stop generating</span>
+            </button>
+          </div>
+
+          <!-- Input Box -->
+          <form id="chatForm" class="relative bg-white dark:bg-neutral-950 rounded-2xl border border-slate-200 dark:border-neutral-800 shadow-sm focus-within:border-brand-500 dark:focus-within:border-neutral-500 focus-within:ring-2 focus-within:ring-brand-500/15 dark:focus-within:ring-white/10 transition">
+            <div class="flex items-end gap-2 p-2 sm:p-2.5">
+              <button type="button" id="voiceInputBtn" class="p-2.5 rounded-xl text-slate-500 hover:text-brand-600 hover:bg-slate-100 dark:text-neutral-400 dark:hover:text-white dark:hover:bg-neutral-900 transition shrink-0" title="Voice input" aria-label="Voice input">
+                <i data-lucide="mic" class="w-4 h-4"></i>
+              </button>
+
+              <textarea id="messageInput" rows="1" placeholder="Ask me anything — science, math, coding, definitions, history, advice..." class="flex-1 resize-none bg-transparent py-2 text-sm text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 outline-none max-h-36 leading-relaxed"></textarea>
+
+              <button type="submit" id="sendBtn" class="p-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 dark:bg-white dark:hover:bg-neutral-200 dark:text-black disabled:opacity-40 disabled:cursor-not-allowed text-white shadow-xs transition shrink-0 flex items-center justify-center" aria-label="Send message">
+                <i data-lucide="arrow-up" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <div class="px-3.5 pb-2 flex items-center justify-between text-[11px] text-slate-400 dark:text-neutral-500">
+              <div class="flex items-center gap-3">
+                <button type="button" id="quickPromptIdeaBtn" class="hover:text-brand-600 dark:hover:text-white transition flex items-center gap-1">
+                  <i data-lucide="sparkles" class="w-3 h-3"></i>
+                  <span>Surprise me</span>
+                </button>
+                <span class="hidden sm:inline">Enter to send • Shift+Enter for new line</span>
+              </div>
+              <span id="charCount">0</span>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settingsModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between">
+        <h3 class="font-display text-lg font-semibold tracking-tight">Assistant Settings</h3>
+        <button id="closeSettingsBtn" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-900">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-4 text-sm max-h-[75vh] overflow-y-auto custom-scroll">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="font-medium">Live Web Knowledge</p>
+            <p class="text-xs text-slate-500 dark:text-neutral-400">Query Wikipedia & Dictionary APIs for real-time factual answers.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer shrink-0">
+            <input type="checkbox" id="liveLookupToggle" class="sr-only peer" checked />
+            <div class="w-10 h-5.5 bg-slate-200 dark:bg-neutral-800 peer-checked:bg-brand-600 dark:peer-checked:bg-white dark:peer-checked:after:bg-black rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:translate-x-4.5"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="font-medium">Typewriter Animation</p>
+            <p class="text-xs text-slate-500 dark:text-neutral-400">Stream responses smoothly word-by-word.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer shrink-0">
+            <input type="checkbox" id="streamToggle" class="sr-only peer" checked />
+            <div class="w-10 h-5.5 bg-slate-200 dark:bg-neutral-800 peer-checked:bg-brand-600 dark:peer-checked:bg-white dark:peer-checked:after:bg-black rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:translate-x-4.5"></div>
+          </label>
+        </div>
+
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <p class="font-medium">Suggested Follow-ups</p>
+            <p class="text-xs text-slate-500 dark:text-neutral-400">Show one-tap follow-up questions below each reply.</p>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer shrink-0">
+            <input type="checkbox" id="followupsToggle" class="sr-only peer" checked />
+            <div class="w-10 h-5.5 bg-slate-200 dark:bg-neutral-800 peer-checked:bg-brand-600 dark:peer-checked:bg-white dark:peer-checked:after:bg-black rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all peer-checked:after:translate-x-4.5"></div>
+          </label>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 dark:border-neutral-800 space-y-2">
+          <p class="font-medium">Your Name (Optional)</p>
+          <input id="userNameInput" type="text" placeholder="e.g., Alex" class="w-full px-3 py-2 text-sm rounded-xl bg-slate-100 dark:bg-neutral-900 border border-transparent focus:border-brand-500 outline-none" />
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 dark:border-neutral-800">
+          <button id="clearAllDataBtn" class="w-full py-2 px-3 rounded-xl border border-rose-200 dark:border-rose-900/60 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-xs font-medium transition">
+            Clear All Conversations & Saved Items
+          </button>
+        </div>
+      </div>
+      <div class="px-5 py-3 bg-slate-50 dark:bg-neutral-900/90 flex justify-end">
+        <button id="saveSettingsBtn" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 dark:bg-white dark:hover:bg-neutral-200 dark:text-black text-white text-xs font-medium transition">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div id="confirmModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 rounded-2xl shadow-xl max-w-sm w-full p-5 space-y-4">
+      <div class="space-y-1">
+        <h3 id="confirmTitle" class="font-display text-lg font-semibold tracking-tight">Confirm Action</h3>
+        <p id="confirmMessage" class="text-xs text-slate-500 dark:text-neutral-400 leading-relaxed"></p>
+      </div>
+      <div class="flex justify-end gap-2">
+        <button id="confirmCancelBtn" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-slate-100 dark:bg-neutral-900 hover:bg-slate-200 dark:hover:bg-neutral-800 transition">Cancel</button>
+        <button id="confirmOkBtn" class="px-3.5 py-2 rounded-xl text-xs font-medium bg-rose-600 hover:bg-rose-700 text-white transition">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    (() => {
+      // ---------- Safe Storage ----------
+      const STORAGE_KEY = 'novachat_state_v1';
+      function loadState() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) return JSON.parse(raw);
+        } catch (_) {}
+        return null;
+      }
+      function saveState() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            chats: state.chats,
+            activeChatId: state.activeChatId,
+            savedMessages: state.savedMessages,
+            settings: state.settings,
+            theme: state.theme,
+            mode: state.mode
+          }));
+        } catch (_) {}
+      }
+
+      // ---------- Initial State ----------
+      const defaultSettings = {
+        liveLookup: true,
+        stream: true,
+        followups: true,
+        userName: ''
+      };
+
+      const persisted = loadState();
+      const state = {
+        chats: persisted?.chats || [],
+        activeChatId: persisted?.activeChatId || null,
+        savedMessages: persisted?.savedMessages || [],
+        settings: { ...defaultSettings, ...(persisted?.settings || {}) },
+        theme: persisted?.theme || 'light',
+        mode: persisted?.mode || 'balanced',
+        sidebarTab: 'chats',
+        searchQuery: '',
+        isGenerating: false,
+        stopRequested: false,
+        speakingMsgId: null
+      };
+
+      // ---------- DOM Refs ----------
+      const el = {
+        sidebar: document.getElementById('sidebar'),
+        sidebarBackdrop: document.getElementById('sidebarBackdrop'),
+        openSidebarBtn: document.getElementById('openSidebarBtn'),
+        closeSidebarBtn: document.getElementById('closeSidebarBtn'),
+        newChatBtn: document.getElementById('newChatBtn'),
+        searchChatsInput: document.getElementById('searchChatsInput'),
+        tabChatsBtn: document.getElementById('tabChatsBtn'),
+        tabSavedBtn: document.getElementById('tabSavedBtn'),
+        savedCountBadge: document.getElementById('savedCountBadge'),
+        sidebarList: document.getElementById('sidebarList'),
+        activeChatTitle: document.getElementById('activeChatTitle'),
+        headerStatusText: document.getElementById('headerStatusText'),
+        modeSelect: document.getElementById('modeSelect'),
+        exportChatBtn: document.getElementById('exportChatBtn'),
+        themeToggleBtn: document.getElementById('themeToggleBtn'),
+        themeToggleSidebar: document.getElementById('themeToggleSidebar'),
+        messagesContainer: document.getElementById('messagesContainer'),
+        messagesInner: document.getElementById('messagesInner'),
+        scrollToBottomBtn: document.getElementById('scrollToBottomBtn'),
+        stopGeneratingWrap: document.getElementById('stopGeneratingWrap'),
+        stopGeneratingBtn: document.getElementById('stopGeneratingBtn'),
+        chatForm: document.getElementById('chatForm'),
+        messageInput: document.getElementById('messageInput'),
+        sendBtn: document.getElementById('sendBtn'),
+        voiceInputBtn: document.getElementById('voiceInputBtn'),
+        quickPromptIdeaBtn: document.getElementById('quickPromptIdeaBtn'),
+        charCount: document.getElementById('charCount'),
+        openSettingsBtn: document.getElementById('openSettingsBtn'),
+        settingsModal: document.getElementById('settingsModal'),
+        closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+        saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+        liveLookupToggle: document.getElementById('liveLookupToggle'),
+        streamToggle: document.getElementById('streamToggle'),
+        followupsToggle: document.getElementById('followupsToggle'),
+        userNameInput: document.getElementById('userNameInput'),
+        clearAllDataBtn: document.getElementById('clearAllDataBtn'),
+        confirmModal: document.getElementById('confirmModal'),
+        confirmTitle: document.getElementById('confirmTitle'),
+        confirmMessage: document.getElementById('confirmMessage'),
+        confirmCancelBtn: document.getElementById('confirmCancelBtn'),
+        confirmOkBtn: document.getElementById('confirmOkBtn'),
+        toastContainer: document.getElementById('toastContainer'),
+        liveModeLabel: document.getElementById('liveModeLabel'),
+        engineStatusDot: document.getElementById('engineStatusDot')
+      };
+
+      // ---------- Starter Prompts ----------
+      const STARTER_PROMPTS = [
+        { icon: 'atom', color: 'text-indigo-500 bg-indigo-50 dark:bg-neutral-900 dark:text-neutral-200 dark:border dark:border-neutral-800', title: 'Science & Tech', prompt: 'How does quantum computing work?' },
+        { icon: 'calculator', color: 'text-emerald-500 bg-emerald-50 dark:bg-neutral-900 dark:text-neutral-200 dark:border dark:border-neutral-800', title: 'Math & Conversions', prompt: 'Calculate (145 * 18) + sqrt(144) and convert 100 km to miles' },
+        { icon: 'code-2', color: 'text-violet-500 bg-violet-50 dark:bg-neutral-900 dark:text-neutral-200 dark:border dark:border-neutral-800', title: 'Coding Helper', prompt: 'Write a Python function to check if a word is a palindrome' },
+        { icon: 'book-open', color: 'text-amber-500 bg-amber-50 dark:bg-neutral-900 dark:text-neutral-200 dark:border dark:border-neutral-800', title: 'Word Definition', prompt: 'Define serendipity' },
+        { icon: 'globe', color: 'text-sky-500 bg-sky-50 dark:bg-neutral-900 dark:text-neutral-200 dark:border dark:border-neutral-800', title: 'World History', prompt: 'Tell me about the Silk Road' },
+        { icon: 'lightbulb', color: 'text-rose-500 bg-rose-50 dark:bg-neutral-900 dark:text-neutral-200 dark:border dark:border-neutral-800', title: 'Productivity & Tips', prompt: 'Give me a practical 5-step study plan to learn any new skill faster' }
+      ];
+
+      const SURPRISE_PROMPTS = [
+        'What is the James Webb Space Telescope?',
+        'Convert 72 fahrenheit to celsius',
+        'Explain photosynthesis simply',
+        'Write a JavaScript debounce function',
+        'Define ephemeral',
+        'What is 15% of 2480?',
+        'Tell me about Nikola Tesla',
+        'How do black holes form?',
+        'Compare SQL and NoSQL databases',
+        'Give me tips for better sleep hygiene'
+      ];
+
+      // ---------- Helpers ----------
+      function uid() {
+        return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function formatTime(ts) {
+        try {
+          return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function showToast(msg, type = 'info') {
+        const div = document.createElement('div');
+        const colors = type === 'error'
+          ? 'bg-rose-600 text-white'
+          : type === 'success'
+            ? 'bg-emerald-600 text-white'
+            : 'bg-slate-900 dark:bg-white text-white dark:text-black';
+        div.className = `pointer-events-auto px-3.5 py-2 rounded-xl text-xs font-medium shadow-lg ${colors} transition-all duration-200 opacity-0 translate-y-[-6px]`;
+        div.textContent = msg;
+        el.toastContainer.appendChild(div);
+        requestAnimationFrame(() => {
+          div.classList.remove('opacity-0', 'translate-y-[-6px]');
+        });
+        setTimeout(() => {
+          div.classList.add('opacity-0', 'translate-y-[-6px]');
+          setTimeout(() => div.remove(), 220);
+        }, 2500);
+      }
+
+      function copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(
+            () => showToast('Copied to clipboard', 'success'),
+            () => fallbackCopy(text)
+          );
+        } else {
+          fallbackCopy(text);
+        }
+      }
+
+      function fallbackCopy(text) {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('Copied to clipboard', 'success');
+        } catch (_) {
+          showToast('Unable to copy automatically', 'error');
+        }
+        ta.remove();
+      }
+
+      // ---------- Confirm Modal ----------
+      let confirmCallback = null;
+      function openConfirm(title, message, onConfirm) {
+        el.confirmTitle.textContent = title;
+        el.confirmMessage.textContent = message;
+        confirmCallback = onConfirm;
+        el.confirmModal.classList.remove('hidden');
+        el.confirmModal.classList.add('flex');
+      }
+      function closeConfirm() {
+        el.confirmModal.classList.add('hidden');
+        el.confirmModal.classList.remove('flex');
+        confirmCallback = null;
+      }
+
+      // ---------- Markdown Renderer ----------
+      function renderMarkdown(md) {
+        if (!md) return '';
+        const codeBlocks = [];
+        let text = md.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+          const idx = codeBlocks.length;
+          codeBlocks.push({ lang: lang || 'code', code: code.replace(/\n$/, '') });
+          return `@@CODEBLOCK_${idx}@@`;
+        });
+
+        text = escapeHtml(text);
+
+        // Inline code
+        text = text.replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>');
+        // Bold & italic
+        text = text.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/\*([^*\n]+)\*/g, '<em>$1</em>');
+        // Links [label](https://...)
+        text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+        const lines = text.split('\n');
+        let html = '';
+        let inUl = false;
+        let inOl = false;
+
+        function closeLists() {
+          if (inUl) { html += '</ul>'; inUl = false; }
+          if (inOl) { html += '</ol>'; inOl = false; }
+        }
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) {
+            closeLists();
+            continue;
+          }
+          if (/^@@CODEBLOCK_(\d+)@@$/.test(line)) {
+            closeLists();
+            const idx = Number(line.match(/^@@CODEBLOCK_(\d+)@@$/)[1]);
+            const blk = codeBlocks[idx];
+            const encoded = encodeURIComponent(blk.code);
+            html += `<pre><div class="flex items-center justify-between px-3.5 py-1.5 bg-slate-800/90 border-b border-slate-700/70 text-[11px] text-slate-300"><span class="font-mono uppercase tracking-wider">${escapeHtml(blk.lang)}</span><button type="button" class="copy-code-btn inline-flex items-center gap-1 px-2 py-0.5 rounded-md hover:bg-slate-700 text-slate-200 transition" data-code="${encoded}">Copy</button></div><code>${escapeHtml(blk.code)}</code></pre>`;
+            continue;
+          }
+          if (line.startsWith('### ')) {
+            closeLists();
+            html += `<h3>${line.slice(4)}</h3>`;
+            continue;
+          }
+          if (line.startsWith('## ')) {
+            closeLists();
+            html += `<h3>${line.slice(3)}</h3>`;
+            continue;
+          }
+          if (line.startsWith('&gt; ')) {
+            closeLists();
+            html += `<blockquote>${line.slice(5)}</blockquote>`;
+            continue;
+          }
+          if (/^[-•*]\s+/.test(line)) {
+            if (inOl) { html += '</ol>'; inOl = false; }
+            if (!inUl) { html += '<ul>'; inUl = true; }
+            html += `<li>${line.replace(/^[-•*]\s+/, '')}</li>`;
+            continue;
+          }
+          if (/^\d+\.\s+/.test(line)) {
+            if (inUl) { html += '</ul>'; inUl = false; }
+            if (!inOl) { html += '<ol>'; inOl = true; }
+            html += `<li>${line.replace(/^\d+\.\s+/, '')}</li>`;
+            continue;
+          }
+          closeLists();
+          html += `<p>${line}</p>`;
+        }
+        closeLists();
+        return html;
+      }
+
+      // ---------- Safe Math & Unit Converter ----------
+      function trySolveUnits(query) {
+        const q = query.toLowerCase();
+        const results = [];
+
+        const convPatterns = [
+          { re: /(\d+(?:\.\d+)?)\s*(?:km|kilometers?|kilometres?)\s+(?:to|in)\s+(?:mi|miles?)/i, fn: v => `${v} km = **${(v * 0.621371).toFixed(2)} miles**` },
+          { re: /(\d+(?:\.\d+)?)\s*(?:mi|miles?)\s+(?:to|in)\s+(?:km|kilometers?|kilometres?)/i, fn: v => `${v} miles = **${(v * 1.60934).toFixed(2)} km**` },
+          { re: /(-?\d+(?:\.\d+)?)\s*(?:°?c|celsius)\s+(?:to|in)\s+(?:°?f|fahrenheit)/i, fn: v => `${v}°C = **${((v * 9/5) + 32).toFixed(1)}°F**` },
+          { re: /(-?\d+(?:\.\d+)?)\s*(?:°?f|fahrenheit)\s+(?:to|in)\s+(?:°?c|celsius)/i, fn: v => `${v}°F = **${((v - 32) * 5/9).toFixed(1)}°C**` },
+          { re: /(\d+(?:\.\d+)?)\s*(?:kg|kilograms?)\s+(?:to|in)\s+(?:lbs?|pounds?)/i, fn: v => `${v} kg = **${(v * 2.20462).toFixed(2)} lbs**` },
+          { re: /(\d+(?:\.\d+)?)\s*(?:lbs?|pounds?)\s+(?:to|in)\s+(?:kg|kilograms?)/i, fn: v => `${v} lbs = **${(v / 2.20462).toFixed(2)} kg**` },
+          { re: /(\d+(?:\.\d+)?)\s*(?:cm|centimeters?)\s+(?:to|in)\s+(?:in|inch|inches)/i, fn: v => `${v} cm = **${(v / 2.54).toFixed(2)} inches**` },
+          { re: /(\d+(?:\.\d+)?)\s*(?:in|inch|inches)\s+(?:to|in)\s+(?:cm|centimeters?)/i, fn: v => `${v} inches = **${(v * 2.54).toFixed(2)} cm**` },
+          { re: /(\d+(?:\.\d+)?)\s*(?:m|meters?|metres?)\s+(?:to|in)\s+(?:ft|feet|foot)/i, fn: v => `${v} m = **${(v * 3.28084).toFixed(2)} ft**` },
+          { re: /(\d+(?:\.\d+)?)\s*(?:ft|feet|foot)\s+(?:to|in)\s+(?:m|meters?|metres?)/i, fn: v => `${v} ft = **${(v / 3.28084).toFixed(2)} m**` },
+          { re: /(\d+(?:\.\d+)?)\s*(?:l|liters?|litres?)\s+(?:to|in)\s+(?:gal|gallons?)/i, fn: v => `${v} L = **${(v * 0.264172).toFixed(2)} US gallons**` },
+          { re: /(\d+(?:\.\d+)?)\s*(?:gal|gallons?)\s+(?:to|in)\s+(?:l|liters?|litres?)/i, fn: v => `${v} US gallons = **${(v * 3.78541).toFixed(2)} L**` }
+        ];
+
+        for (const p of convPatterns) {
+          const m = q.match(p.re);
+          if (m) results.push(p.fn(parseFloat(m[1])));
+        }
+        return results;
+      }
+
+      function trySolveMath(query) {
+        // Percentage phrasing: "15% of 2480"
+        const pctMatch = query.match(/(\d+(?:\.\d+)?)\s*%\s+of\s+(\d+(?:,\d{3})*(?:\.\d+)?)/i);
+        if (pctMatch) {
+          const pct = parseFloat(pctMatch[1]);
+          const base = parseFloat(pctMatch[2].replace(/,/g, ''));
+          const val = (pct / 100) * base;
+          return `${pct}% of ${base.toLocaleString()} = **${Number(val.toFixed(6)).toLocaleString()}**`;
+        }
+
+        // Extract mathematical expression
+        const cleaned = query
+          .replace(/^(?:calculate|compute|solve|what is|what's|eval|evaluate)\s+/i, '')
+          .replace(/\s+and\s+convert[\s\S]*$/i, '')
+          .replace(/×/g, '*')
+          .replace(/÷/g, '/')
+          .replace(/\^/g, '**')
+          .replace(/\?+$/, '')
+          .trim();
+
+        const hasOperator = /[+\-*/%]|\bsqrt\b|\bsin\b|\bcos\b|\btan\b|\blog\b|\babs\b|\bpow\b/i.test(cleaned);
+        if (!hasOperator) return null;
+
+        // Validate only safe math tokens
+        const safeCheck = cleaned
+          .replace(/\b(sqrt|sin|cos|tan|log|abs|round|floor|ceil|pow|pi|e)\b/gi, '')
+          .replace(/[0-9.+\-*/()% ,]/g, '');
+        if (safeCheck.trim().length > 0) return null;
+
+        try {
+          const jsExpr = cleaned
+            .replace(/\bsqrt\b/gi, 'Math.sqrt')
+            .replace(/\bsin\b/gi, 'Math.sin')
+            .replace(/\bcos\b/gi, 'Math.cos')
+            .replace(/\btan\b/gi, 'Math.tan')
+            .replace(/\blog\b/gi, 'Math.log10')
+            .replace(/\babs\b/gi, 'Math.abs')
+            .replace(/\bround\b/gi, 'Math.round')
+            .replace(/\bfloor\b/gi, 'Math.floor')
+            .replace(/\bceil\b/gi, 'Math.ceil')
+            .replace(/\bpow\b/gi, 'Math.pow')
+            .replace(/\bpi\b/gi, 'Math.PI')
+            .replace(/\be\b/gi, 'Math.E');
+
+          const result = Function('"use strict"; return (' + jsExpr + ');')();
+          if (typeof result === 'number' && Number.isFinite(result)) {
+            const formatted = Number.isInteger(result) ? result.toLocaleString() : Number(result.toFixed(6)).toLocaleString();
+            return `\`${cleaned}\` = **${formatted}**`;
+          }
+        } catch (_) {}
+        return null;
+      }
+
+      // ---------- Code Snippets Knowledge ----------
+      function tryCodeAnswer(query) {
+        const q = query.toLowerCase();
+        if (!/(write|code|function|script|snippet|example|program|algorithm|python|javascript|html|css|sql|react)/i.test(q)) {
+          return null;
+        }
+
+        if (/palindrome/i.test(q)) {
+          const isJs = /javascript|\bjs\b/i.test(q);
+          if (isJs) {
+            return {
+              text: `Here is a clean JavaScript function to check if a word or phrase is a palindrome (ignoring spaces, punctuation, and letter case):\n\n\`\`\`javascript\nfunction isPalindrome(text) {\n  const cleaned = text.toLowerCase().replace(/[^a-z0-9]/g, '');\n  const reversed = cleaned.split('').reverse().join('');\n  return cleaned === reversed;\n}\n\nconsole.log(isPalindrome("racecar")); // true\nconsole.log(isPalindrome("A man, a plan, a canal: Panama")); // true\n\`\`\`\n\n- **Time Complexity:** O(n)\n- **Tip:** Stripping non-alphanumeric characters makes it work for full sentences as well as single words.`,
+              followups: ['How do I write this in Python?', 'How can I optimize it with two pointers?', 'Give me 3 test cases']
+            };
+          }
+          return {
+            text: `Here is a concise Python function to check whether a word or sentence is a palindrome:\n\n\`\`\`python\nimport re\n\ndef is_palindrome(text: str) -> bool:\n    cleaned = re.sub(r'[^a-z0-9]', '', text.lower())\n    return cleaned == cleaned[::-1]\n\nprint(is_palindrome("racecar"))  # True\nprint(is_palindrome("A man, a plan, a canal: Panama"))  # True\n\`\`\`\n\n### How it works\n1. \`text.lower()\` normalizes letter casing.\n2. \`re.sub(...)\` removes spaces and punctuation.\n3. \`cleaned[::-1]\` reverses the string and compares it to the original.`,
+            followups: ['Show me the JavaScript version', 'Explain slice syntax [::-1]', 'How to do it without regex?']
+          };
+        }
+
+        if (/debounce/i.test(q)) {
+          return {
+            text: `A **debounce** function delays invoking a callback until the user stops triggering it for a set number of milliseconds — ideal for search inputs and resize handlers.\n\n\`\`\`javascript\nfunction debounce(fn, delay = 300) {\n  let timerId;\n  return function (...args) {\n    clearTimeout(timerId);\n    timerId = setTimeout(() => fn.apply(this, args), delay);\n  };\n}\n\n// Example usage\nconst onSearch = debounce((query) => {\n  console.log('Searching for:', query);\n}, 350);\n\`\`\`\n\n- **Why it helps:** Prevents firing dozens of API calls while someone is still typing.`,
+            followups: ['What is the difference between debounce and throttle?', 'Write a throttle function too', 'How do I use this in React?']
+          };
+        }
+
+        if (/sql.*nosql|nosql.*sql/i.test(q)) {
+          return {
+            text: `### SQL vs. NoSQL Databases\n\n- **SQL (Relational — PostgreSQL, MySQL, SQLite):** Stores data in structured tables with fixed schemas and relationships. Best for financial systems, complex joins, and strong ACID transactions.\n- **NoSQL (Non-Relational — MongoDB, Redis, DynamoDB):** Stores data as JSON documents, key-value pairs, wide columns, or graphs. Best for rapidly evolving schemas, high-velocity reads/writes, and horizontal scaling.\n\n### Quick Rule of Thumb\n- Choose **SQL** when data integrity and relationships matter most.\n- Choose **NoSQL** when flexibility, nested documents, or massive distributed throughput matter most.`,
+            followups: ['Show an example SQL JOIN query', 'When should I use PostgreSQL vs MongoDB?', 'What does ACID mean?']
+          };
+        }
+
+        if (/fibonacci/i.test(q)) {
+          return {
+            text: `Here is an efficient iterative Fibonacci function in Python (O(n) time, O(1) space):\n\n\`\`\`python\ndef fibonacci(n: int) -> list[int]:\n    seq = []\n    a, b = 0, 1\n    for _ in range(n):\n        seq.append(a)\n        a, b = b, a + b\n    return seq\n\nprint(fibonacci(10))  # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]\n\`\`\``,
+            followups: ['Show the recursive version with memoization', 'Write this in JavaScript', 'What is the golden ratio?']
+          };
+        }
+
+        if (/sort|quicksort|mergesort|binary search/i.test(q)) {
+          return {
+            text: `Here is a clean **Binary Search** implementation in JavaScript (works on any sorted array in O(log n) time):\n\n\`\`\`javascript\nfunction binarySearch(arr, target) {\n  let left = 0;\n  let right = arr.length - 1;\n  while (left <= right) {\n    const mid = Math.floor((left + right) / 2);\n    if (arr[mid] === target) return mid;\n    if (arr[mid] < target) left = mid + 1;\n    else right = mid - 1;\n  }\n  return -1;\n}\n\nconsole.log(binarySearch([2, 5, 8, 12, 16, 23], 16)); // 4\n\`\`\``,
+            followups: ['Explain Big-O notation', 'Write Merge Sort in Python', 'When is linear search better?']
+          };
+        }
+
+        return null;
+      }
+
+      // ---------- Practical Guides & Everyday Questions ----------
+      function tryPracticalAnswer(query) {
+        const q = query.toLowerCase().trim();
+        const userName = state.settings.userName ? `, ${state.settings.userName}` : '';
+
+        if (/^(hi|hello|hey|good morning|good afternoon|good evening|namaste|yo|hola)\b/i.test(q) && q.length < 35) {
+          return {
+            text: `Hello${userName}! 👋 I'm **NovaChat**, ready to help with any question you have.\n\nYou can ask me to:\n- **Look up facts** across science, history, geography, and people\n- **Solve math & unit conversions** instantly\n- **Define words** with pronunciations and examples\n- **Write or explain code** and compare concepts\n- **Brainstorm plans & tips** for learning, productivity, or writing\n\nWhat would you like to explore today?`,
+            followups: ['How does quantum computing work?', 'Calculate 18% of 450', 'Define serendipity']
+          };
+        }
+
+        if (/what (time|date|day) is it|today'?s date|current time/i.test(q)) {
+          const now = new Date();
+          return {
+            text: `Right now, your device reports:\n- **Date:** ${now.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n- **Local Time:** ${now.toLocaleTimeString()}`,
+            followups: ['How many days until New Year?', 'Give me a productive daily schedule', 'What happened today in history?']
+          };
+        }
+
+        if (/study plan|learn .* faster|how to study/i.test(q)) {
+          return {
+            text: `### 5-Step Study Plan to Learn Any Skill Faster\n\n1. **Define one concrete milestone:** Pick a specific, measurable outcome (e.g., "build a 1-page app" or "hold a 5-minute conversation") instead of vague goals.\n2. **Deconstruct the core 20%:** Identify the foundational concepts that show up 80% of the time and focus on those first.\n3. **Use Active Recall:** After reading or watching for 15 minutes, close the material and explain it in your own words or solve a problem from memory.\n4. **Space your practice:** Study in focused 25–45 minute blocks across 4–5 days rather than one long cram session.\n5. **Build & get feedback early:** Apply what you learn to a tiny real project and review mistakes immediately.\n\n> Tip: Teaching a concept aloud as if explaining it to a 10-year-old quickly exposes any hidden gaps.`,
+            followups: ['Explain the Pomodoro Technique', 'Explain spaced repetition', 'Make a 7-day learning schedule']
+          };
+        }
+
+        if (/sleep hygiene|better sleep|can't sleep/i.test(q)) {
+          return {
+            text: `### Practical Tips for Better Sleep Hygiene\n\n- **Keep a consistent wake time:** Waking up at the same time daily anchors your circadian rhythm more than bedtime alone.\n- **Get morning light:** 10–15 minutes of outdoor daylight within an hour of waking helps regulate melatonin at night.\n- **Watch caffeine timing:** Avoid caffeine 8–10 hours before bed.\n- **Cool, dark room:** Most people sleep best around 18–20°C (65–68°F) with minimal screen glare 45 minutes before sleep.\n- **Wind-down buffer:** Replace scrolling with reading, stretching, or jotting down tomorrow's to-do list to quiet racing thoughts.`,
+            followups: ['What is circadian rhythm?', 'How does melatonin work?', 'Give me a 10-minute evening wind-down routine']
+          };
+        }
+
+        if (/who are you|what can you do|help me/i.test(q) && q.length < 50) {
+          return {
+            text: `I'm **NovaChat**, your all-purpose Q&A assistant. I combine live web knowledge lookups (Wikipedia & Dictionary) with built-in math, unit conversion, coding helpers, and customizable response styles.\n\nTry switching the **Response Mode** in the top bar (Balanced, Concise, Detailed, Simple ELI5, or Code Expert) to tailor how I answer!`,
+            followups: ['Explain photosynthesis simply', 'Convert 100 km to miles', 'Write a Python palindrome checker']
+          };
+        }
+
+        return null;
+      }
+
+      // ---------- Live Dictionary API ----------
+      async function fetchDefinition(word) {
+        const cleanWord = word.trim().toLowerCase().replace(/[^a-z-]/g, '');
+        if (!cleanWord) return null;
+        try {
+          const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cleanWord)}`);
+          if (!res.ok) return null;
+          const data = await res.json();
+          const entry = data[0];
+          if (!entry) return null;
+
+          const phonetic = entry.phonetic || (entry.phonetics?.find(p => p.text)?.text) || '';
+          const lines = [`### ${entry.word} ${phonetic ? `\`${phonetic}\`` : ''}`];
+
+          (entry.meanings || []).slice(0, 3).forEach(m => {
+            lines.push(`**${m.partOfSpeech}**`);
+            (m.definitions || []).slice(0, 2).forEach(d => {
+              lines.push(`- ${d.definition}`);
+              if (d.example) lines.push(`  > *"${d.example}"*`);
+            });
+          });
+
+          const syns = (entry.meanings || []).flatMap(m => m.synonyms || []).slice(0, 5);
+          if (syns.length) lines.push(`\n**Synonyms:** ${syns.join(', ')}`);
+
+          return {
+            text: lines.join('\n'),
+            sources: [{ title: `Dictionary: ${entry.word}`, url: `https://en.wiktionary.org/wiki/${encodeURIComponent(cleanWord)}` }],
+            followups: [`Use "${entry.word}" in 3 sentences`, `What is the origin of "${entry.word}"?`, 'Define another word']
+          };
+        } catch (_) {
+          return null;
+        }
+      }
+
+      // ---------- Live Wikipedia Search & Summary ----------
+      function extractSearchTopic(query) {
+        return query
+          .replace(/^(what is|what are|what was|what were|who is|who was|who are|where is|when was|when did|how does|how do|how did|why does|why do|why is|explain|tell me about|describe|summarize|give me information about|can you explain)\s+/i, '')
+          .replace(/\b(simply|in simple terms|like i'?m 5|eli5|in detail|briefly|please)\b/gi, '')
+          .replace(/[?!.]+$/, '')
+          .trim();
+      }
+
+      async function fetchWikipediaAnswer(query, mode) {
+        const topic = extractSearchTopic(query) || query.trim();
+        try {
+          const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(topic)}&utf8=&format=json&origin=*&srlimit=3`;
+          const sRes = await fetch(searchUrl);
+          if (!sRes.ok) return null;
+          const sData = await sRes.json();
+          const hits = sData?.query?.search || [];
+          if (!hits.length) return null;
+
+          const topTitle = hits[0].title;
+          const sumUrl = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(topTitle.replace(/ /g, '_'))}`;
+          const sumRes = await fetch(sumUrl);
+          if (!sumRes.ok) return null;
+          const sum = await sumRes.json();
+          if (!sum.extract) return null;
+
+          const sentences = sum.extract.match(/[^.!?]+[.!?]+/g) || [sum.extract];
+          let body = '';
+
+          if (mode === 'concise') {
+            body = sentences.slice(0, 2).join(' ').trim();
+          } else if (mode === 'eli5') {
+            body = `### The Simple Version: ${sum.title}\n\n${sentences.slice(0, 2).join(' ').trim()}\n\n### Key Takeaway\n- Think of **${sum.title}** as ${sum.description ? `a ${sum.description}` : 'an important concept in its field'} — once you know that core role, the details fall into place easily.`;
+          } else if (mode === 'detailed') {
+            body = `### ${sum.title}${sum.description ? ` — ${sum.description}` : ''}\n\n${sum.extract}`;
+            if (hits.length > 1) {
+              const related = hits.slice(1).map(h => `**${h.title}**`).join(', ');
+              body += `\n\n### Related Topics\n- You may also want to explore: ${related}.`;
+            }
+          } else {
+            body = `### ${sum.title}\n\n${sentences.slice(0, 4).join(' ').trim()}`;
+            if (sum.description) {
+              body += `\n\n- **In short:** ${sum.description.charAt(0).toUpperCase() + sum.description.slice(1)}.`;
+            }
+          }
+
+          const pageUrl = sum.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(topTitle.replace(/ /g, '_'))}`;
+          const followups = [
+            `Explain ${sum.title} simply`,
+            hits[1] ? `Tell me about ${hits[1].title}` : `Give me more detail on ${sum.title}`,
+            `Why is ${sum.title} important?`
+          ];
+
+          return {
+            text: body,
+            sources: [{ title: `Wikipedia: ${sum.title}`, url: pageUrl }],
+            followups
+          };
+        } catch (_) {
+          return null;
+        }
+      }
+
+      // ---------- Master Answer Engine ----------
+      async function generateAnswer(query) {
+        const mode = state.mode;
+        const q = query.trim();
+
+        // 1. Math + Unit conversions (can run together!)
+        const mathAns = trySolveMath(q);
+        const unitAns = trySolveUnits(q);
+        if (mathAns || unitAns.length) {
+          const parts = [];
+          if (mathAns) parts.push(`### Calculation\n- ${mathAns}`);
+          if (unitAns.length) parts.push(`### Unit Conversion\n${unitAns.map(u => `- ${u}`).join('\n')}`);
+          return {
+            text: parts.join('\n\n'),
+            sources: [],
+            followups: ['Convert 100 km to miles', 'What is 25% of 1600?', 'Calculate sqrt(625) * 12']
+          };
+        }
+
+        // 2. Practical / conversational intents
+        const practical = tryPracticalAnswer(q);
+        if (practical) return practical;
+
+        // 3. Code & technical snippets
+        const codeAns = tryCodeAnswer(q);
+        if (codeAns) return codeAns;
+
+        // 4. Live Dictionary lookup for "define X" / "meaning of X"
+        const defMatch = q.match(/^(?:define|meaning of|what does .+ mean|definition of)\s+["']?([a-zA-Z-]+)["']?/i)
+          || q.match(/^what does\s+["']?([a-zA-Z-]+)["']?\s+mean/i);
+        if (defMatch && state.settings.liveLookup) {
+          const defAns = await fetchDefinition(defMatch[1]);
+          if (defAns) return defAns;
+        }
+
+        // 5. Live Wikipedia knowledge lookup for general questions
+        if (state.settings.liveLookup) {
+          const wikiAns = await fetchWikipediaAnswer(q, mode);
+          if (wikiAns) return wikiAns;
+        }
+
+        // 6. Graceful structured fallback (works even if offline or no exact encyclopedia hit)
+        const topic = extractSearchTopic(q) || q;
+        return {
+          text: `### Exploring "${topic}"\n\nI couldn't pull a direct live encyclopedia entry for that exact phrasing, so here is a structured way to tackle it:\n\n1. **Clarify the core goal:** Are you looking for a quick definition, step-by-step instructions, a comparison, or a code example?\n2. **Try a focused keyword:** Asking *"Tell me about [topic]"*, *"Define [word]"*, or *"Calculate [expression]"* triggers instant live lookups.\n3. **Switch modes:** Use the **Response Mode** selector in the top bar (e.g., *Simple ELI5* or *Code Expert*) to adjust depth and format.\n\nTell me a bit more about what angle you'd like, and I'll narrow it right down!`,
+          sources: [],
+          followups: [`Define ${topic.split(' ')[0]}`, 'How does photosynthesis work?', 'Write a Python palindrome checker']
+        };
+      }
+
+      // ---------- Chat Management ----------
+      function getActiveChat() {
+        return state.chats.find(c => c.id === state.activeChatId) || null;
+      }
+
+      function createNewChat(switchToIt = true) {
+        const chat = {
+          id: uid(),
+          title: 'New Conversation',
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          messages: []
+        };
+        state.chats.unshift(chat);
+        if (switchToIt) state.activeChatId = chat.id;
+        saveState();
+        renderAll();
+        return chat;
+      }
+
+      function deleteChat(chatId) {
+        state.chats = state.chats.filter(c => c.id !== chatId);
+        if (state.activeChatId === chatId) {
+          state.activeChatId = state.chats[0]?.id || null;
+        }
+        saveState();
+        renderAll();
+        showToast('Conversation deleted');
+      }
+
+      function toggleSaveMessage(msg, chatTitle) {
+        const idx = state.savedMessages.findIndex(s => s.id === msg.id);
+        if (idx >= 0) {
+          state.savedMessages.splice(idx, 1);
+          showToast('Removed from Saved');
+        } else {
+          state.savedMessages.unshift({
+            id: msg.id,
+            text: msg.text,
+            chatTitle,
+            savedAt: Date.now()
+          });
+          showToast('Saved answer for later', 'success');
+        }
+        saveState();
+        renderSidebar();
+        renderMessages();
+      }
+
+      // ---------- Speech Synthesis (Read Aloud) ----------
+      function toggleSpeak(msg) {
+        if (!('speechSynthesis' in window)) {
+          showToast('Read aloud is not supported in this browser', 'error');
+          return;
+        }
+        if (state.speakingMsgId === msg.id) {
+          window.speechSynthesis.cancel();
+          state.speakingMsgId = null;
+          renderMessages();
+          return;
+        }
+        window.speechSynthesis.cancel();
+        const plain = msg.text.replace(/```[\s\S]*?```/g, ' Code snippet. ').replace(/[#*`_>]/g, '');
+        const utter = new SpeechSynthesisUtterance(plain);
+        utter.onend = () => {
+          state.speakingMsgId = null;
+          renderMessages();
+        };
+        utter.onerror = () => {
+          state.speakingMsgId = null;
+          renderMessages();
+        };
+        state.speakingMsgId = msg.id;
+        window.speechSynthesis.speak(utter);
+        renderMessages();
+      }
+
+      // ---------- Render Functions ----------
+      function applyTheme() {
+        document.documentElement.classList.toggle('dark', state.theme === 'dark');
+      }
+
+      function renderSidebar() {
+        // Saved badge
+        const savedCount = state.savedMessages.length;
+        el.savedCountBadge.textContent = savedCount;
+        el.savedCountBadge.classList.toggle('hidden', savedCount === 0);
+
+        // Tabs styling
+        const activeTabCls = 'bg-white dark:bg-neutral-800 text-slate-900 dark:text-white shadow-xs';
+        const inactiveTabCls = 'text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-neutral-200';
+        el.tabChatsBtn.className = `py-1.5 rounded-lg transition flex items-center justify-center gap-1.5 ${state.sidebarTab === 'chats' ? activeTabCls : inactiveTabCls}`;
+        el.tabSavedBtn.className = `py-1.5 rounded-lg transition flex items-center justify-center gap-1.5 ${state.sidebarTab === 'saved' ? activeTabCls : inactiveTabCls}`;
+
+        el.liveModeLabel.textContent = state.settings.liveLookup ? 'Hybrid Live Knowledge' : 'Offline Smart Engine';
+        el.engineStatusDot.className = `w-2 h-2 rounded-full ${state.settings.liveLookup ? 'bg-emerald-500' : 'bg-amber-500'}`;
+
+        const q = state.searchQuery.trim().toLowerCase();
+
+        if (state.sidebarTab === 'saved') {
+          const items = state.savedMessages.filter(s => !q || s.text.toLowerCase().includes(q) || s.chatTitle.toLowerCase().includes(q));
+          if (!items.length) {
+            el.sidebarList.innerHTML = `<div class="text-center py-10 px-4 text-xs text-slate-400 dark:text-neutral-500">No saved answers yet.<br/>Click the bookmark icon on any reply to save it here.</div>`;
+            return;
+          }
+          el.sidebarList.innerHTML = items.map(item => `
+            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-900/90 border border-slate-200/70 dark:border-neutral-800 space-y-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] font-semibold text-brand-600 dark:text-white truncate">${escapeHtml(item.chatTitle)}</span>
+                <button type="button" class="remove-saved-btn p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-slate-200/60 dark:hover:bg-neutral-800 transition" data-id="${item.id}" title="Remove">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+              <p class="text-xs text-slate-600 dark:text-neutral-300 line-clamp-3 leading-relaxed">${escapeHtml(item.text.replace(/[#*`]/g, ''))}</p>
+              <button type="button" class="copy-saved-btn text-[11px] font-medium text-slate-500 hover:text-brand-600 dark:hover:text-white transition" data-id="${item.id}">Copy text</button>
+            </div>
+          `).join('');
+          lucide.createIcons();
+          return;
+        }
+
+        const filteredChats = state.chats.filter(c => {
+          if (!q) return true;
+          if (c.title.toLowerCase().includes(q)) return true;
+          return c.messages.some(m => m.text.toLowerCase().includes(q));
+        });
+
+        if (!filteredChats.length) {
+          el.sidebarList.innerHTML = `<div class="text-center py-10 px-4 text-xs text-slate-400 dark:text-neutral-500">${q ? 'No matching conversations.' : 'Start a new conversation above.'}</div>`;
+          return;
+        }
+
+        el.sidebarList.innerHTML = filteredChats.map(chat => {
+          const isActive = chat.id === state.activeChatId;
+          const count = chat.messages.length;
+          return `
+            <div class="chat-item group flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl cursor-pointer transition ${isActive ? 'bg-brand-50 dark:bg-neutral-900 text-brand-700 dark:text-white font-medium' : 'hover:bg-slate-100 dark:hover:bg-neutral-900 text-slate-700 dark:text-neutral-300'}" data-id="${chat.id}">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <i data-lucide="message-circle" class="w-4 h-4 shrink-0 ${isActive ? 'text-brand-600 dark:text-white' : 'text-slate-400'}"></i>
+                <div class="min-w-0">
+                  <div class="text-xs truncate">${escapeHtml(chat.title)}</div>
+                  <div class="text-[10px] text-slate-400 dark:text-neutral-500">${count} ${count === 1 ? 'message' : 'messages'}</div>
+                </div>
+              </div>
+              <button type="button" class="delete-chat-btn opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-white dark:hover:bg-neutral-800 transition shrink-0" data-id="${chat.id}" title="Delete chat" aria-label="Delete chat">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          `;
+        }).join('');
+        lucide.createIcons();
+      }
+
+      function renderMessages() {
+        const chat = getActiveChat();
+        el.activeChatTitle.textContent = chat ? chat.title : 'New Conversation';
+
+        if (!chat || chat.messages.length === 0) {
+          const greeting = state.settings.userName ? `Hi ${escapeHtml(state.settings.userName)}, what can I help you with?` : 'What can I help you with today?';
+          el.messagesInner.innerHTML = `
+            <div class="py-6 sm:py-10 flex flex-col items-center text-center space-y-6 msg-enter">
+              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 via-indigo-500 to-violet-600 dark:from-neutral-800 dark:via-neutral-900 dark:to-black dark:border dark:border-neutral-700 flex items-center justify-center shadow-lg shadow-brand-500/25 dark:shadow-none">
+                <svg class="w-7 h-7 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/>
+                </svg>
+              </div>
+              <div class="space-y-1.5 max-w-md">
+                <h2 class="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-slate-900 dark:text-white">${greeting}</h2>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-neutral-400">Ask any question — factual lookups, math, unit conversions, coding, word definitions, or study advice.</p>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-2xl text-left">
+                ${STARTER_PROMPTS.map(sp => `
+                  <button type="button" class="starter-card text-left group p-3.5 rounded-2xl bg-white dark:bg-neutral-950 border border-slate-200/80 dark:border-neutral-800 hover:border-brand-400 dark:hover:border-neutral-600 hover:shadow-sm transition flex items-start gap-3" data-prompt="${escapeHtml(sp.prompt)}">
+                    <div class="w-8 h-8 rounded-xl ${sp.color} flex items-center justify-center shrink-0">
+                      <i data-lucide="${sp.icon}" class="w-4 h-4"></i>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-xs font-semibold text-slate-800 dark:text-neutral-100 group-hover:text-brand-600 dark:group-hover:text-white transition">${sp.title}</div>
+                      <div class="text-xs text-slate-500 dark:text-neutral-400 line-clamp-2 mt-0.5">${escapeHtml(sp.prompt)}</div>
+                    </div>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        el.messagesInner.innerHTML = chat.messages.map((msg, index) => {
+          const isUser = msg.role === 'user';
+          const isLast = index === chat.messages.length - 1;
+          const isSaved = state.savedMessages.some(s => s.id === msg.id);
+          const isSpeaking = state.speakingMsgId === msg.id;
+
+          if (isUser) {
+            return `
+              <div class="flex justify-end msg-enter">
+                <div class="max-w-[85%] sm:max-w-[78%] space-y-1">
+                  <div class="px-4 py-3 rounded-2xl rounded-br-md bg-brand-600 dark:bg-neutral-800 dark:border dark:border-neutral-700 text-white text-sm leading-relaxed shadow-xs whitespace-pre-wrap break-words">${escapeHtml(msg.text)}</div>
+                  <div class="text-[10px] text-slate-400 text-right pr-1">${formatTime(msg.ts)}</div>
+                </div>
+              </div>
+            `;
+          }
+
+          if (msg.pending) {
+            return `
+              <div class="flex items-start gap-3 msg-enter">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-violet-600 dark:from-neutral-800 dark:to-black dark:border dark:border-neutral-700 flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                  <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+                </div>
+                <div class="px-4 py-3.5 rounded-2xl rounded-tl-md bg-white dark:bg-neutral-950 border border-slate-200/80 dark:border-neutral-800 shadow-xs flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-brand-500 dark:bg-white typing-dot"></span>
+                  <span class="w-2 h-2 rounded-full bg-brand-500 dark:bg-white typing-dot"></span>
+                  <span class="w-2 h-2 rounded-full bg-brand-500 dark:bg-white typing-dot"></span>
+                  <span class="text-xs text-slate-400 ml-1.5">Thinking...</span>
+                </div>
+              </div>
+            `;
+          }
+
+          const sourcesHtml = (msg.sources && msg.sources.length)
+            ? `<div class="mt-3 pt-2.5 border-t border-slate-100 dark:border-neutral-800 flex flex-wrap gap-1.5">
+                ${msg.sources.map(s => `<a href="${escapeHtml(s.url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-neutral-800 dark:hover:text-white transition"><i data-lucide="external-link" class="w-3 h-3"></i><span>${escapeHtml(s.title)}</span></a>`).join('')}
+               </div>`
+            : '';
+
+          const followupsHtml = (isLast && !state.isGenerating && state.settings.followups && msg.followups && msg.followups.length)
+            ? `<div class="mt-2.5 flex flex-wrap gap-1.5">
+                ${msg.followups.map(f => `<button type="button" class="followup-chip px-3 py-1.5 rounded-full text-xs bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-300 hover:border-brand-400 hover:text-brand-600 dark:hover:text-white transition" data-prompt="${escapeHtml(f)}">${escapeHtml(f)}</button>`).join('')}
+               </div>`
+            : '';
+
+          return `
+            <div class="flex items-start gap-3 msg-enter" data-msg-id="${msg.id}">
+              <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-brand-500 to-violet-600 dark:from-neutral-800 dark:to-black dark:border dark:border-neutral-700 flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="px-4 py-3.5 rounded-2xl rounded-tl-md bg-white dark:bg-neutral-950 border border-slate-200/80 dark:border-neutral-800 shadow-xs">
+                  <div class="prose-chat text-sm text-slate-800 dark:text-neutral-100 break-words">${renderMarkdown(msg.text)}</div>
+                  ${sourcesHtml}
+                </div>
+                <div class="mt-1.5 flex items-center flex-wrap gap-1 text-slate-400 dark:text-neutral-500 px-1">
+                  <span class="text-[10px] mr-1">${formatTime(msg.ts)}</span>
+                  <button type="button" class="msg-action-copy p-1.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-neutral-900 hover:text-slate-700 dark:hover:text-neutral-200 transition" data-id="${msg.id}" title="Copy answer">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button type="button" class="msg-action-speak p-1.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-neutral-900 transition ${isSpeaking ? 'text-brand-600 dark:text-white bg-brand-50 dark:bg-neutral-800' : 'hover:text-slate-700 dark:hover:text-neutral-200'}" data-id="${msg.id}" title="${isSpeaking ? 'Stop reading' : 'Read aloud'}">
+                    <i data-lucide="${isSpeaking ? 'volume-x' : 'volume-2'}" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button type="button" class="msg-action-save p-1.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-neutral-900 transition ${isSaved ? 'text-amber-500' : 'hover:text-slate-700 dark:hover:text-neutral-200'}" data-id="${msg.id}" title="${isSaved ? 'Saved' : 'Save answer'}">
+                    <i data-lucide="bookmark" class="w-3.5 h-3.5"></i>
+                  </button>
+                  ${isLast ? `<button type="button" class="msg-action-regen p-1.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-neutral-900 hover:text-slate-700 dark:hover:text-neutral-200 transition" data-id="${msg.id}" title="Regenerate response"><i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i></button>` : ''}
+                  <button type="button" class="msg-action-like p-1.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-neutral-900 transition ${msg.feedback === 'up' ? 'text-emerald-500' : 'hover:text-slate-700 dark:hover:text-neutral-200'}" data-id="${msg.id}" title="Helpful">
+                    <i data-lucide="thumbs-up" class="w-3.5 h-3.5"></i>
+                  </button>
+                  <button type="button" class="msg-action-dislike p-1.5 rounded-lg hover:bg-slate-200/70 dark:hover:bg-neutral-900 transition ${msg.feedback === 'down' ? 'text-rose-500' : 'hover:text-slate-700 dark:hover:text-neutral-200'}" data-id="${msg.id}" title="Not helpful">
+                    <i data-lucide="thumbs-down" class="w-3.5 h-3.5"></i>
+                  </button>
+                </div>
+                ${followupsHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        lucide.createIcons();
+      }
+
+      function renderAll() {
+        applyTheme();
+        el.modeSelect.value = state.mode;
+        el.liveLookupToggle.checked = state.settings.liveLookup;
+        el.streamToggle.checked = state.settings.stream;
+        el.followupsToggle.checked = state.settings.followups;
+        el.userNameInput.value = state.settings.userName || '';
+        renderSidebar();
+        renderMessages();
+      }
+
+      function scrollToBottom(smooth = true) {
+        el.messagesContainer.scrollTo({
+          top: el.messagesContainer.scrollHeight,
+          behavior: smooth ? 'smooth' : 'auto'
+        });
+      }
+
+      // ---------- Send & Stream Pipeline ----------
+      async function sendMessage(rawText) {
+        const text = rawText.trim();
+        if (!text || state.isGenerating) return;
+
+        let chat = getActiveChat();
+        if (!chat) {
+          chat = createNewChat(true);
+        }
+
+        if (chat.messages.length === 0) {
+          chat.title = text.length > 42 ? text.slice(0, 42) + '…' : text;
+        }
+
+        chat.messages.push({ id: uid(), role: 'user', text, ts: Date.now() });
+        const botMsg = { id: uid(), role: 'assistant', text: '', pending: true, sources: [], followups: [], feedback: null, ts: Date.now() };
+        chat.messages.push(botMsg);
+        chat.updatedAt = Date.now();
+
+        state.isGenerating = true;
+        state.stopRequested = false;
+        el.sendBtn.disabled = true;
+        el.stopGeneratingWrap.classList.remove('hidden');
+        el.headerStatusText.textContent = 'Searching knowledge & crafting answer...';
+
+        saveState();
+        renderSidebar();
+        renderMessages();
+        scrollToBottom(true);
+
+        const result = await generateAnswer(text);
+        botMsg.pending = false;
+        botMsg.sources = result.sources || [];
+        botMsg.followups = result.followups || [];
+
+        if (state.settings.stream && !state.stopRequested) {
+          const fullText = result.text;
+          const chunkSize = Math.max(4, Math.ceil(fullText.length / 45));
+          for (let i = 0; i < fullText.length; i += chunkSize) {
+            if (state.stopRequested) break;
+            botMsg.text = fullText.slice(0, i + chunkSize);
+            renderMessages();
+            scrollToBottom(false);
+            await new Promise(r => setTimeout(r, 16));
+          }
+          if (!state.stopRequested) botMsg.text = fullText;
+        } else {
+          botMsg.text = result.text;
+        }
+
+        state.isGenerating = false;
+        state.stopRequested = false;
+        el.sendBtn.disabled = false;
+        el.stopGeneratingWrap.classList.add('hidden');
+        el.headerStatusText.textContent = state.settings.liveLookup
+          ? 'Ready • Live Web Knowledge + Math & Code'
+          : 'Ready • Offline Smart Engine';
+
+        saveState();
+        renderMessages();
+        scrollToBottom(true);
+      }
+
+      async function regenerateLast() {
+        const chat = getActiveChat();
+        if (!chat || state.isGenerating) return;
+        const lastUser = [...chat.messages].reverse().find(m => m.role === 'user');
+        if (!lastUser) return;
+        if (chat.messages[chat.messages.length - 1]?.role === 'assistant') {
+          chat.messages.pop();
+        }
+        // Re-run answer for last user prompt without duplicating user message
+        const botMsg = { id: uid(), role: 'assistant', text: '', pending: true, sources: [], followups: [], feedback: null, ts: Date.now() };
+        chat.messages.push(botMsg);
+        state.isGenerating = true;
+        state.stopRequested = false;
+        el.sendBtn.disabled = true;
+        el.stopGeneratingWrap.classList.remove('hidden');
+        renderMessages();
+        scrollToBottom(true);
+
+        const result = await generateAnswer(lastUser.text);
+        botMsg.pending = false;
+        botMsg.sources = result.sources || [];
+        botMsg.followups = result.followups || [];
+        botMsg.text = result.text;
+
+        state.isGenerating = false;
+        el.sendBtn.disabled = false;
+        el.stopGeneratingWrap.classList.add('hidden');
+        saveState();
+        renderMessages();
+        scrollToBottom(true);
+      }
+
+      // ---------- Sidebar Mobile Toggle ----------
+      function openSidebar() {
+        el.sidebar.classList.remove('-translate-x-full');
+        el.sidebarBackdrop.classList.remove('hidden');
+      }
+      function closeSidebar() {
+        el.sidebar.classList.add('-translate-x-full');
+        el.sidebarBackdrop.classList.add('hidden');
+      }
+
+      // ---------- Voice Input ----------
+      let recognition = null;
+      let isListening = false;
+      function toggleVoiceInput() {
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+          showToast('Voice input is not supported in this browser', 'error');
+          return;
+        }
+        if (isListening && recognition) {
+          recognition.stop();
+          return;
+        }
+        recognition = new SpeechRec();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.onstart = () => {
+          isListening = true;
+          el.voiceInputBtn.classList.add('text-rose-500', 'bg-rose-50', 'dark:bg-neutral-900 dark:text-neutral-200 dark:border dark:border-neutral-800');
+          showToast('Listening... speak your question');
+        };
+        recognition.onresult = (e) => {
+          const transcript = e.results[0]?.[0]?.transcript || '';
+          if (transcript) {
+            el.messageInput.value = (el.messageInput.value ? el.messageInput.value + ' ' : '') + transcript;
+            autoResizeTextarea();
+            el.messageInput.focus();
+          }
+        };
+        recognition.onerror = () => showToast('Could not capture voice input', 'error');
+        recognition.onend = () => {
+          isListening = false;
+          el.voiceInputBtn.classList.remove('text-rose-500', 'bg-rose-50', 'dark:bg-neutral-900 dark:text-neutral-200 dark:border dark:border-neutral-800');
+        };
+        recognition.start();
+      }
+
+      // ---------- Export Chat ----------
+      function exportActiveChat() {
+        const chat = getActiveChat();
+        if (!chat || !chat.messages.length) {
+          showToast('Start a conversation before exporting');
+          return;
+        }
+        const md = `# ${chat.title}\n\n` + chat.messages.map(m =>
+          `### ${m.role === 'user' ? 'You' : 'NovaChat'} (${formatTime(m.ts)})\n\n${m.text}\n`
+        ).join('\n---\n\n');
+
+        const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${chat.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40) || 'novachat'}.md`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast('Exported chat as Markdown', 'success');
+      }
+
+      function autoResizeTextarea() {
+        el.messageInput.style.height = 'auto';
+        el.messageInput.style.height = Math.min(el.messageInput.scrollHeight, 144) + 'px';
+        el.charCount.textContent = el.messageInput.value.length;
+      }
+
+      // ---------- Event Listeners ----------
+      el.openSidebarBtn.addEventListener('click', openSidebar);
+      el.closeSidebarBtn.addEventListener('click', closeSidebar);
+      el.sidebarBackdrop.addEventListener('click', closeSidebar);
+
+      el.newChatBtn.addEventListener('click', () => {
+        createNewChat(true);
+        closeSidebar();
+        el.messageInput.focus();
+      });
+
+      el.searchChatsInput.addEventListener('input', (e) => {
+        state.searchQuery = e.target.value;
+        renderSidebar();
+      });
+
+      el.tabChatsBtn.addEventListener('click', () => {
+        state.sidebarTab = 'chats';
+        renderSidebar();
+      });
+
+      el.tabSavedBtn.addEventListener('click', () => {
+        state.sidebarTab = 'saved';
+        renderSidebar();
+      });
+
+      el.modeSelect.addEventListener('change', (e) => {
+        state.mode = e.target.value;
+        saveState();
+        showToast(`Switched to ${e.target.options[e.target.selectedIndex].text} mode`);
+      });
+
+      function toggleTheme() {
+        state.theme = state.theme === 'dark' ? 'light' : 'dark';
+        saveState();
+        applyTheme();
+      }
+      el.themeToggleBtn.addEventListener('click', toggleTheme);
+      el.themeToggleSidebar.addEventListener('click', toggleTheme);
+
+      el.exportChatBtn.addEventListener('click', exportActiveChat);
+      el.voiceInputBtn.addEventListener('click', toggleVoiceInput);
+
+      el.quickPromptIdeaBtn.addEventListener('click', () => {
+        const pick = SURPRISE_PROMPTS[Math.floor(Math.random() * SURPRISE_PROMPTS.length)];
+        el.messageInput.value = pick;
+        autoResizeTextarea();
+        el.messageInput.focus();
+      });
+
+      el.stopGeneratingBtn.addEventListener('click', () => {
+        state.stopRequested = true;
+      });
+
+      el.messageInput.addEventListener('input', autoResizeTextarea);
+      el.messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          el.chatForm.dispatchEvent(new Event('submit'));
+        }
+      });
+
+      el.chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const val = el.messageInput.value;
+        if (!val.trim() || state.isGenerating) return;
+        el.messageInput.value = '';
+        autoResizeTextarea();
+        sendMessage(val);
+      });
+
+      el.messagesContainer.addEventListener('scroll', () => {
+        const distFromBottom = el.messagesContainer.scrollHeight - el.messagesContainer.scrollTop - el.messagesContainer.clientHeight;
+        el.scrollToBottomBtn.classList.toggle('hidden', distFromBottom < 140);
+      });
+
+      el.scrollToBottomBtn.addEventListener('click', () => scrollToBottom(true));
+
+      // Delegated clicks in Sidebar
+      el.sidebarList.addEventListener('click', (e) => {
+        const delBtn = e.target.closest('.delete-chat-btn');
+        if (delBtn) {
+          e.stopPropagation();
+          const id = delBtn.dataset.id;
+          openConfirm('Delete conversation?', 'This will permanently remove the chat history from this browser.', () => deleteChat(id));
+          return;
+        }
+        const chatItem = e.target.closest('.chat-item');
+        if (chatItem) {
+          state.activeChatId = chatItem.dataset.id;
+          saveState();
+          renderSidebar();
+          renderMessages();
+          closeSidebar();
+          scrollToBottom(false);
+          return;
+        }
+        const rmSaved = e.target.closest('.remove-saved-btn');
+        if (rmSaved) {
+          const id = rmSaved.dataset.id;
+          state.savedMessages = state.savedMessages.filter(s => s.id !== id);
+          saveState();
+          renderSidebar();
+          renderMessages();
+          showToast('Removed from Saved');
+          return;
+        }
+        const cpSaved = e.target.closest('.copy-saved-btn');
+        if (cpSaved) {
+          const item = state.savedMessages.find(s => s.id === cpSaved.dataset.id);
+          if (item) copyToClipboard(item.text);
+        }
+      });
+
+      // Delegated clicks in Messages
+      el.messagesInner.addEventListener('click', (e) => {
+        const starter = e.target.closest('.starter-card');
+        if (starter) {
+          sendMessage(starter.dataset.prompt);
+          return;
+        }
+        const followup = e.target.closest('.followup-chip');
+        if (followup) {
+          sendMessage(followup.dataset.prompt);
+          return;
+        }
+        const copyCode = e.target.closest('.copy-code-btn');
+        if (copyCode) {
+          copyToClipboard(decodeURIComponent(copyCode.dataset.code));
+          return;
+        }
+
+        const chat = getActiveChat();
+        if (!chat) return;
+
+        const copyBtn = e.target.closest('.msg-action-copy');
+        if (copyBtn) {
+          const msg = chat.messages.find(m => m.id === copyBtn.dataset.id);
+          if (msg) copyToClipboard(msg.text);
+          return;
+        }
+        const speakBtn = e.target.closest('.msg-action-speak');
+        if (speakBtn) {
+          const msg = chat.messages.find(m => m.id === speakBtn.dataset.id);
+          if (msg) toggleSpeak(msg);
+          return;
+        }
+        const saveBtn = e.target.closest('.msg-action-save');
+        if (saveBtn) {
+          const msg = chat.messages.find(m => m.id === saveBtn.dataset.id);
+          if (msg) toggleSaveMessage(msg, chat.title);
+          return;
+        }
+        const regenBtn = e.target.closest('.msg-action-regen');
+        if (regenBtn) {
+          regenerateLast();
+          return;
+        }
+        const likeBtn = e.target.closest('.msg-action-like');
+        if (likeBtn) {
+          const msg = chat.messages.find(m => m.id === likeBtn.dataset.id);
+          if (msg) {
+            msg.feedback = msg.feedback === 'up' ? null : 'up';
+            saveState();
+            renderMessages();
+            if (msg.feedback === 'up') showToast('Thanks for the feedback!', 'success');
+          }
+          return;
+        }
+        const dislikeBtn = e.target.closest('.msg-action-dislike');
+        if (dislikeBtn) {
+          const msg = chat.messages.find(m => m.id === dislikeBtn.dataset.id);
+          if (msg) {
+            msg.feedback = msg.feedback === 'down' ? null : 'down';
+            saveState();
+            renderMessages();
+            if (msg.feedback === 'down') showToast('Got it — try switching Response Mode or regenerating.');
+          }
+        }
+      });
+
+      // Settings Modal
+      function openSettings() {
+        el.settingsModal.classList.remove('hidden');
+        el.settingsModal.classList.add('flex');
+      }
+      function closeSettings() {
+        state.settings.liveLookup = el.liveLookupToggle.checked;
+        state.settings.stream = el.streamToggle.checked;
+        state.settings.followups = el.followupsToggle.checked;
+        state.settings.userName = el.userNameInput.value.trim();
+        saveState();
+        el.settingsModal.classList.add('hidden');
+        el.settingsModal.classList.remove('flex');
+        el.headerStatusText.textContent = state.settings.liveLookup
+          ? 'Ready • Live Web Knowledge + Math & Code'
+          : 'Ready • Offline Smart Engine';
+        renderAll();
+      }
+      el.openSettingsBtn.addEventListener('click', openSettings);
+      el.closeSettingsBtn.addEventListener('click', closeSettings);
+      el.saveSettingsBtn.addEventListener('click', closeSettings);
+      el.settingsModal.addEventListener('click', (e) => {
+        if (e.target === el.settingsModal) closeSettings();
+      });
+
+      el.clearAllDataBtn.addEventListener('click', () => {
+        openConfirm('Clear all data?', 'This will delete all conversations and saved answers stored in this browser.', () => {
+          state.chats = [];
+          state.activeChatId = null;
+          state.savedMessages = [];
+          saveState();
+          closeSettings();
+          renderAll();
+          showToast('All data cleared');
+        });
+      });
+
+      el.confirmCancelBtn.addEventListener('click', closeConfirm);
+      el.confirmOkBtn.addEventListener('click', () => {
+        if (confirmCallback) confirmCallback();
+        closeConfirm();
+      });
+      el.confirmModal.addEventListener('click', (e) => {
+        if (e.target === el.confirmModal) closeConfirm();
+      });
+
+      // ---------- Init ----------
+      if (!state.chats.length) {
+        createNewChat(true);
+      } else {
+        if (!state.activeChatId || !state.chats.some(c => c.id === state.activeChatId)) {
+          state.activeChatId = state.chats[0].id;
+        }
+        renderAll();
+      }
+      lucide.createIcons();
+    })();
+  </script>
+</body>
+</html>
